@@ -118,8 +118,4 @@ La aplicacion se adapta a tres breakpoints:
 | 480-768px | 270px | 216px | 144px | 2.9rem |
 | > 768px | 324px | 252px | 180px | 3.6rem |
 
-## Despliegue
 
-GitHub Pages sirve la rama `main` como sitio estatico. No se requiere paso de build. HTTPS es proporcionado automaticamente por GitHub.
-
-URL de produccion: `https://lypaw.github.io/Shake-Love/`
