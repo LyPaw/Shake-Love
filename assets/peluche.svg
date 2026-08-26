@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="150" height="150">
+  <!-- Cuerpo -->
+  <ellipse cx="75" cy="95" rx="35" ry="40" fill="#FFE4EC"/>
+  <!-- Cabeza -->
+  <circle cx="75" cy="50" r="30" fill="#FFE4EC"/>
+  <!-- Orejas -->
+  <ellipse cx="55" cy="25" rx="8" ry="20" fill="#FFB6D3" transform="rotate(-15 55 25)"/>
+  <ellipse cx="95" cy="25" rx="8" ry="20" fill="#FFB6D3" transform="rotate(15 95 25)"/>
+  <!-- Mejillas -->
+  <circle cx="58" cy="55" r="8" fill="#FFB6D3" opacity="0.5"/>
+  <circle cx="92" cy="55" r="8" fill="#FFB6D3" opacity="0.5"/>
+  <!-- Ojos -->
+  <circle cx="65" cy="48" r="4" fill="#5A4A5A"/>
+  <circle cx="85" cy="48" r="4" fill="#5A4A5A"/>
+  <circle cx="67" cy="46" r="1.5" fill="white"/>
+  <circle cx="87" cy="46" r="1.5" fill="white"/>
+  <!-- Nariz -->
+  <ellipse cx="75" cy="56" rx="4" ry="3" fill="#FF8BBE"/>
+  <!-- Boca -->
+  <path d="M70 60 Q75 65 80 60" stroke="#5A4A5A" stroke-width="1.5" fill="none"/>
+  <!-- Bracitos -->
+  <ellipse cx="45" cy="85" rx="8" ry="15" fill="#FFE4EC" transform="rotate(20 45 85)"/>
+  <ellipse cx="105" cy="85" rx="8" ry="15" fill="#FFE4EC" transform="rotate(-20 105 85)"/>
+  <!-- Corazón -->
+  <text x="60" y="100" font-size="16" fill="#FF8BBE">❤</text>
+</svg>
