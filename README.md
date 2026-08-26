@@ -1,7 +1,7 @@
 # Shake & Love
 
 **Autor:** LyPaw (Manuel Fuentes Cruz)
-**Ano:** 2026
+**Año:** 2026
 
 Pagina web romantica y minimalista construida con HTML, CSS y JavaScript puro, sin frameworks ni backend. El destinatario accede a una escena interactiva donde un pollito duerme sobre una caja; al agitar el movil, el pollito despierta y la caja se abre revelando un mensaje personalizado.
 
