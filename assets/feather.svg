@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="150" height="150">
+  <!-- Pluma - forma curva -->
+  <path d="M75 10 Q95 40, 85 75 Q80 95, 75 140 Q70 95, 65 75 Q55 40, 75 10 Z" fill="#FFB6D3"/>
+  <path d="M75 10 Q95 40, 85 75 Q80 95, 75 140 Q70 95, 65 75 Q55 40, 75 10 Z" fill="none" stroke="#E07AA5" stroke-width="1.5"/>
+  <!-- Veta central -->
+  <line x1="75" y1="15" x2="75" y2="135" stroke="#E07AA5" stroke-width="1.2" opacity="0.6"/>
+  <!-- Vetas laterales -->
+  <line x1="75" y1="35" x2="88" y2="28" stroke="#E07AA5" stroke-width="0.8" opacity="0.4"/>
+  <line x1="75" y1="35" x2="62" y2="28" stroke="#E07AA5" stroke-width="0.8" opacity="0.4"/>
+  <line x1="75" y1="55" x2="92" y2="45" stroke="#E07AA5" stroke-width="0.8" opacity="0.4"/>
+  <line x1="75" y1="55" x2="58" y2="45" stroke="#E07AA5" stroke-width="0.8" opacity="0.4"/>
+  <line x1="75" y1="75" x2="90" y2="68" stroke="#E07AA5" stroke-width="0.8" opacity="0.4"/>
+  <line x1="75" y1="75" x2="60" y2="68" stroke="#E07AA5" stroke-width="0.8" opacity="0.4"/>
+  <line x1="75" y1="95" x2="85" y2="90" stroke="#E07AA5" stroke-width="0.8" opacity="0.3"/>
+  <line x1="75" y1="95" x2="65" y2="90" stroke="#E07AA5" stroke-width="0.8" opacity="0.3"/>
+  <!-- Brillo -->
+  <ellipse cx="68" cy="35" rx="6" ry="15" fill="#FFD6E8" opacity="0.4" transform="rotate(-5 68 35)"/>
+</svg>
