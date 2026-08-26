@@ -32,6 +32,17 @@
     const timezoneSelect = document.getElementById('timezone-select');
     const clockArea = document.getElementById('clock-area');
 
+    // ========== SANITIZE ==========
+    function sanitize(str, maxLen = 200) {
+        if (!str || typeof str !== 'string') return '';
+        return str
+            .replace(/<[^>]*>/g, '')
+            .replace(/javascript:/gi, '')
+            .replace(/on\w+\s*=/gi, '')
+            .trim()
+            .substring(0, maxLen);
+    }
+
     // ========== STATE ==========
     let state = {
         chickAwake: false,
@@ -48,10 +59,10 @@
     // ========== DAILY BOX (localStorage) ==========
     function getDailyKey() {
         const params = new URLSearchParams(window.location.search);
-        const sender = params.get('sender') || '';
-        const message = params.get('message') || '';
+        const sender = sanitize(params.get('sender') || '', 30).replace(/[^a-zA-Z0-9_-]/g, '');
+        const message = sanitize(params.get('message') || '', 200).replace(/[^a-zA-Z0-9_-]/g, '');
         const today = new Date().toISOString().split('T')[0];
-        return `box_${sender}_${message}_${today}`;
+        return `box_${sender}_${message}_${today}`.substring(0, 200);
     }
 
     function wasBoxOpenedToday() {
@@ -219,16 +230,25 @@
     }
 
     function startClocks(zones) {
+        let validZones;
+        try {
+            const supported = new Set(Intl.supportedValuesOf('timeZone'));
+            validZones = zones.filter(z => supported.has(z));
+        } catch (e) {
+            validZones = [];
+        }
+        if (validZones.length === 0) return;
+
         clockArea.innerHTML = '';
-        zones.forEach(zone => {
+        validZones.forEach(zone => {
             const el = document.createElement('div');
             el.className = 'clock';
             el.dataset.tz = zone;
             el.textContent = getCityName(zone) + '  —:——';
             clockArea.appendChild(el);
         });
-        updateClocks(zones);
-        setInterval(() => updateClocks(zones), 15000);
+        updateClocks(validZones);
+        setInterval(() => updateClocks(validZones), 15000);
     }
 
     function updateClocks(zones) {
@@ -248,14 +268,14 @@
     // ========== INIT ==========
     function init() {
         const params = new URLSearchParams(window.location.search);
-        const message = params.get('message');
-        const sender = params.get('sender');
+        const message = sanitize(decodeURIComponent(params.get('message') || ''), 200);
+        const sender = sanitize(params.get('sender') || '', 30);
         const tzs = params.get('tz');
         state.isPreview = params.get('preview') === 'true';
 
         if (message && sender) {
             btnBack.style.display = state.isPreview ? '' : 'none';
-            showProposal(sender, decodeURIComponent(message));
+            showProposal(sender, message);
 
             if (tzs) {
                 startClocks(tzs.split(','));
@@ -357,8 +377,8 @@
 
     function handleFormSubmit(e) {
         e.preventDefault();
-        const sender = senderInput.value.trim();
-        const message = messageInput.value.trim();
+        const sender = sanitize(senderInput.value.trim(), 30);
+        const message = sanitize(messageInput.value.trim(), 200);
         if (!sender || !message) return;
 
         const url = new URL(window.location.href.split('?')[0]);
