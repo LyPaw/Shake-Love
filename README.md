@@ -26,6 +26,28 @@ script.js           -> Logica completa: interaccion, fisica, sonido, almacenamie
 assets/             -> Imagenes PNG/SVG del pollito, cofre, objetos, logo
 ```
 
+## Diseno
+
+Los assets graficos del pollito, cofre y demas elementos fueron dibujados manualmente en Procreate (iPad) con fondo transparente y exportados como PNG.
+
+![Captura del proceso de diseno en Procreate](assets/pocreate.PNG)
+
+Paleta de colores utilizada:
+
+| Variable | Color | Uso |
+|----------|-------|-----|
+| `--pink-light` | #FFE4EC | Fondo principal, bordes |
+| `--pink-medium` | #FFB6D3 | Botones, acentos |
+| `--pink-dark` | #FF8BBE | Textos destacados, titulos |
+| `--cream` | #FFF5F7 | Fondos de input, textura |
+| `--gold` | #FFD700 | Destellos, confeti |
+| `--text-dark` | #5A4A5A | Texto principal |
+| `--text-light` | #8A7A8A | Texto secundario, relojes |
+
+Los objetos interactivos (almohada, peluche) se crearon como SVGs minimalistas con la misma estetica pastel. Los emojis (estrella, flor, corazon, pluma) se usan directamente como elementos del DOM con `font-size` grande y `drop-shadow` para integrarlos visualmente con los assets dibujados.
+
+Las decoraciones de fondo (estrellas, nubes, hojas, destellos) son SVGs inline en el HTML con animaciones CSS sutiles (flotacion, deriva horizontal, caida con rotacion) para dar vida a la escena sin sobrecargar la interfaz.
+
 ## Flujo de Experiencia
 
 ```
@@ -118,4 +140,8 @@ La aplicacion se adapta a tres breakpoints:
 | 480-768px | 270px | 216px | 144px | 2.9rem |
 | > 768px | 324px | 252px | 180px | 3.6rem |
 
+## Despliegue
 
+GitHub Pages sirve la rama `main` como sitio estatico. No se requiere paso de build. HTTPS es proporcionado automaticamente por GitHub.
+
+URL de produccion: `https://lypaw.github.io/Shake-Love/`
