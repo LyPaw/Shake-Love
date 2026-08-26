@@ -13,21 +13,12 @@ Una página web romántica y minimalista para pedirle a alguien que sea tu novia
 7. Si dice **Sí**: ¡flores y confeti! 🎉
 8. Si dice **No**: el pollito vuelve a dormir 💤
 
-## Cómo personalizar
+## Diseño
 
 ### Assets (imágenes)
-Necesitas crear estas imágenes en Procreate (o similar) con fondo transparente PNG:
+Dibujos creados en Procreate:
 
-| Archivo | Descripción |
-|---------|-------------|
-| `assets/chick-sleep.svg` | Pollito dormido |
-| `assets/chick-awake.svg` | Pollito despierto/sorprendido |
-| `assets/cofre.png` | Caja/cofre cerrado |
-| `assets/box-open.svg` | Caja abierta con brillo |
-| `assets/pillow.svg` | Almohada pequeña |
-| `assets/peluche.svg` | Peluche (conejito, oso, etc) |
 
-> **Nota:** Los archivos SVG incluidos son placeholders. Reemplázalos con tus dibujos PNG de Procreate cuando los tengas.
 
 ### Sonido (opcional)
 - `assets/open-sound.mp3` - Sonido al abrir la caja
@@ -39,16 +30,6 @@ Necesitas crear estas imágenes en Procreate (o similar) con fondo transparente 
 3. Ve a Settings > Pages > Source: "main branch"
 4. Tu web estará en: `https://tu-usuario.github.io/tu-repositorio/`
 
-### Compartir
-El enlace para compartir tiene este formato:
-```
-https://tu-usuario.github.io/tu-repositorio/?sender=TU_NOMBRE&message=TU_MENSAJE
-```
-
-Ejemplo:
-```
-https://tusitio.github.io/caja/?sender=Juan&message=¿Quieres%20ser%20mi%20novia?
-```
 
 ## Características
 
