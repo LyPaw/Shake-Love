@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 180" width="300" height="180">
+  <!-- Alfombra ovalada -->
+  <ellipse cx="150" cy="90" rx="145" ry="85" fill="#FFD6E8"/>
+  <ellipse cx="150" cy="90" rx="145" ry="85" fill="none" stroke="#FFB6D3" stroke-width="3"/>
+  <!-- Borde interior -->
+  <ellipse cx="150" cy="90" rx="120" ry="65" fill="none" stroke="#FFB6D3" stroke-width="2" stroke-dasharray="8,6"/>
+  <!-- Centro -->
+  <ellipse cx="150" cy="90" rx="80" ry="45" fill="#FFE4EC"/>
+  <!-- Brillo -->
+  <ellipse cx="130" cy="75" rx="40" ry="20" fill="#FFF5F7" opacity="0.5"/>
+</svg>
