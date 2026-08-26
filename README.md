@@ -1,7 +1,7 @@
 # Shake & Love
 
 **Autor:** LyPaw (Manuel Fuentes Cruz)
-**Año:** 2026
+**Ano:** 2026
 
 Pagina web romantica y minimalista construida con HTML, CSS y JavaScript puro, sin frameworks ni backend. El destinatario accede a una escena interactiva donde un pollito duerme sobre una caja; al agitar el movil, el pollito despierta y la caja se abre revelando un mensaje personalizado.
 
@@ -11,7 +11,19 @@ Pagina web romantica y minimalista construida con HTML, CSS y JavaScript puro, s
 
 Copyright 2026 LyPaw (Manuel Fuentes Cruz). Todos los derechos reservados.
 
-Se permite el uso personal y no comercial de esta aplicacion. Queda prohibida la distribucion, reproduccion, modificacion y uso comercial total o parcial sin autorizacion expresa por escrito del autor. El codigo fuente se proporciona unicamente como referencia tecnica.
+### Uso permitido
+- Usar la aplicacion web desde su enlace oficial
+- Compartir el enlace con otras personas
+- Ver y disfrutar de la experiencia
+
+### Queda prohibido sin autorizacion escrita
+- Reproducir, copiar o redistribuir el codigo fuente
+- Modificar, adaptar o crear trabajos derivados
+- Uso comercial total o parcial
+- Alojar una copia de la aplicacion en otro servidor
+- Vender o monetizar cualquier parte de la aplicacion
+
+El codigo fuente se proporciona unicamente como referencia tecnica.
 
 ---
 
@@ -26,7 +38,7 @@ script.js           -> Logica completa: interaccion, fisica, sonido, almacenamie
 assets/             -> Imagenes PNG/SVG del pollito, cofre, objetos, logo
 ```
 
-## Diseño
+## Diseno
 
 Los assets graficos del pollito, cofre y demas elementos fueron dibujados manualmente en Procreate (iPad) con fondo transparente y exportados como PNG.
 
@@ -139,3 +151,9 @@ La aplicacion se adapta a tres breakpoints:
 | < 480px | 216px | 180px | 108px | 2.3rem |
 | 480-768px | 270px | 216px | 144px | 2.9rem |
 | > 768px | 324px | 252px | 180px | 3.6rem |
+
+## Despliegue
+
+GitHub Pages sirve la rama `main` como sitio estatico. No se requiere paso de build. HTTPS es proporcionado automaticamente por GitHub.
+
+URL de produccion: `https://lypaw.github.io/Shake-Love/`
