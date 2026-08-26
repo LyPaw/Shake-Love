@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="150" height="150">
+  <!-- Estrella de 5 puntas -->
+  <polygon points="75,10 90,55 140,55 100,82 115,130 75,100 35,130 50,82 10,55 60,55" fill="#FFD700"/>
+  <polygon points="75,10 90,55 140,55 100,82 115,130 75,100 35,130 50,82 10,55 60,55" fill="none" stroke="#E6B800" stroke-width="2"/>
+  <!-- Brillo -->
+  <ellipse cx="60" cy="55" rx="18" ry="12" fill="#FFF5CC" opacity="0.6" transform="rotate(-15 60 55)"/>
+  <!-- Punto central -->
+  <circle cx="75" cy="72" r="6" fill="#FFEB3B" opacity="0.5"/>
+</svg>
