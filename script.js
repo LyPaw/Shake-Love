@@ -31,6 +31,25 @@
     const liliesContainer = document.getElementById('lilies-container');
     const timezoneSelect = document.getElementById('timezone-select');
     const clockArea = document.getElementById('clock-area');
+    const shakeProgress = document.getElementById('shake-progress');
+    const shakeFill = document.getElementById('shake-fill');
+    const shakeText = document.getElementById('shake-text');
+
+    // ========== STATE ==========
+    let state = {
+        chickAwake: false,
+        boxOpen: false,
+        shakeCount: 0,
+        touchCount: 0,
+        neededShakes: 40,
+        neededTouches: 8,
+        isPreview: false,
+        boxAlreadyOpenedToday: false,
+        shakeStartTime: 0,
+        shakeActive: false,
+        lastShakeTime: 0,
+        touchFeedbacks: ['💤', '💤💤', 'Hmm...', 'Zzz...', '¡Despierta!', '🎵', '✨', '💤💤💤']
+    };
 
     // ========== SANITIZE ==========
     function sanitize(str, maxLen = 200) {
@@ -43,18 +62,32 @@
             .substring(0, maxLen);
     }
 
-    // ========== STATE ==========
-    let state = {
-        chickAwake: false,
-        boxOpen: false,
-        shakeCount: 0,
-        touchCount: 0,
-        neededShakes: 5,
-        neededTouches: 8,
-        isPreview: false,
-        boxAlreadyOpenedToday: false,
-        touchFeedbacks: ['💤', '💤💤', 'Hmm...', 'Zzz...', '¡Despierta!', '🎵', '✨', '💤💤💤']
-    };
+    // ========== SHAKE PROGRESS ==========
+    function updateShakeProgress() {
+        const pct = Math.min(100, (state.shakeCount / state.neededShakes) * 100);
+        shakeFill.style.width = pct + '%';
+        shakeProgress.classList.remove('hidden');
+
+        if (pct < 30) {
+            shakeText.textContent = '¡Agita con fuerza! 💪';
+        } else if (pct < 60) {
+            shakeText.textContent = '¡No pares! 🔥';
+        } else if (pct < 90) {
+            shakeText.textContent = '¡Casi lo consigues! ✨';
+        } else {
+            shakeText.textContent = '¡Ya está! 🎉';
+        }
+    }
+
+    function resetShakeProgress() {
+        state.shakeCount = 0;
+        state.shakeActive = false;
+        state.shakeStartTime = 0;
+        state.lastShakeTime = 0;
+        shakeFill.style.width = '0%';
+        shakeProgress.classList.add('hidden');
+        shakeText.textContent = '';
+    }
 
     // ========== DAILY BOX (localStorage) ==========
     function getDailyKey() {
@@ -417,6 +450,7 @@
         state.boxOpen = false;
         state.shakeCount = 0;
         state.touchCount = 0;
+        resetShakeProgress();
         chick.classList.remove('awake');
         chickImg.src = 'assets/chick_sleep.PNG';
         box.classList.remove('open', 'closing', 'disappear');
@@ -463,7 +497,10 @@
     function setupShakeDetection() {
         let lastX = 0, lastY = 0, lastZ = 0;
         let lastTime = 0;
-        const threshold = 25;
+        const threshold = 50;
+        const DECAY_RATE = 0.4;
+        const DECAY_INTERVAL = 800;
+        const MAX_WINDOW = 4000;
 
         if (typeof DeviceMotionEvent !== 'undefined') {
             if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -480,6 +517,44 @@
                 window.addEventListener('devicemotion', handleMotion);
             }
         }
+
+        function processShake() {
+            const now = Date.now();
+            if (!state.shakeActive) {
+                state.shakeActive = true;
+                state.shakeStartTime = now;
+            }
+
+            state.shakeCount++;
+            state.lastShakeTime = now;
+            updateShakeProgress();
+
+            if (state.shakeCount >= state.neededShakes && !state.chickAwake) {
+                wakeUpChick();
+            }
+        }
+
+        function decayLoop() {
+            setInterval(() => {
+                if (!state.shakeActive || state.boxOpen || state.boxAlreadyOpenedToday || state.chickAwake) return;
+
+                const now = Date.now();
+                const timeSinceLastShake = now - state.lastShakeTime;
+                const timeSinceStart = now - state.shakeStartTime;
+
+                if (timeSinceLastShake > DECAY_INTERVAL) {
+                    state.shakeCount = Math.max(0, state.shakeCount - Math.floor(state.neededShakes * DECAY_RATE));
+                    updateShakeProgress();
+                }
+
+                if (timeSinceStart > MAX_WINDOW) {
+                    resetShakeProgress();
+                    showMessage('¡Intenta de nuevo con más fuerza! 💪', 2000);
+                }
+            }, 300);
+        }
+
+        decayLoop();
 
         function handleMotion(e) {
             if (state.boxOpen || state.boxAlreadyOpenedToday) return;
@@ -500,12 +575,8 @@
             const speed = Math.abs(x + y + z - lastX - lastY - lastZ) / diffTime * 10000;
 
             if (speed > threshold) {
-                state.shakeCount++;
+                processShake();
                 showTouchFeedback('📱✨');
-
-                if (state.shakeCount >= state.neededShakes && !state.chickAwake) {
-                    wakeUpChick();
-                }
             }
 
             lastX = x;
@@ -520,11 +591,8 @@
 
             if (e.code === 'Space' || e.code === 'Enter') {
                 e.preventDefault();
-                state.shakeCount++;
+                processShake();
                 showTouchFeedback('⌨️✨');
-                if (state.shakeCount >= state.neededShakes && !state.chickAwake) {
-                    wakeUpChick();
-                }
             }
         });
     }
@@ -534,6 +602,7 @@
         state.chickAwake = true;
         chick.classList.add('awake');
         chickImg.src = 'assets/chick.PNG';
+        resetShakeProgress();
 
         playOpenSound();
         openBox();
@@ -555,6 +624,7 @@
         state.boxOpen = false;
         messageArea.classList.add('hidden');
         messageArea.classList.remove('risen');
+        resetShakeProgress();
 
         if (keepHidden) {
             box.classList.add('disappear');
