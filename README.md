@@ -26,7 +26,7 @@ script.js           -> Logica completa: interaccion, fisica, sonido, almacenamie
 assets/             -> Imagenes PNG/SVG del pollito, cofre, objetos, logo
 ```
 
-## Diseno
+## Diseño
 
 Los assets graficos del pollito, cofre y demas elementos fueron dibujados manualmente en Procreate (iPad) con fondo transparente y exportados como PNG.
 
