@@ -28,6 +28,58 @@ body {
     color: var(--text-dark);
 }
 
+/* ========== LOADING SCREEN ========== */
+.loading-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, var(--pink-light) 0%, var(--white) 50%, var(--cream) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.6s ease;
+}
+
+.loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loading-heart {
+    font-size: 60px;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* ========== SHAKE FALLBACK (Brave) ========== */
+.shake-fallback {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, var(--pink-medium), var(--pink-dark));
+    color: var(--white);
+    border: none;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: grab;
+    z-index: 60;
+    box-shadow: 0 6px 20px var(--shadow);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.shake-fallback:active {
+    transform: scale(0.95);
+    cursor: grabbing;
+}
+
+.shake-fallback.hidden {
+    display: none;
+}
+
 /* ========== SCREENS ========== */
 .screen {
     position: fixed;
@@ -349,15 +401,6 @@ body {
 }
 
 /* Emoji objects */
-.obj-emoji {
-    font-size: 90px;
-    display: block;
-    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
-    pointer-events: none;
-    user-select: none;
-    line-height: 1;
-}
-
 #star {
     left: 70%;
     top: 20%;
@@ -426,7 +469,7 @@ body {
 
 #chick {
     position: relative;
-    z-index: 5;
+    z-index: 10;
     animation: sleepBob 3s ease-in-out infinite;
 }
 
@@ -788,10 +831,6 @@ body {
         width: 360px;
     }
 
-    .obj-emoji {
-        font-size: 65px;
-    }
-
     #star { left: 68%; top: 18%; }
     #flower { left: 3%; top: 62%; }
     #heart { right: 4%; top: 22%; }
@@ -830,10 +869,6 @@ body {
 
     #rug img {
         width: 612px;
-    }
-
-    .obj-emoji {
-        font-size: 108px;
     }
 }
 
