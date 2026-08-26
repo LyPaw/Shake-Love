@@ -11,6 +11,11 @@
 </head>
 <body>
 
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-heart">❤</div>
+    </div>
+
     <!-- PANTALLA 1: Formulario para crear el enlace -->
     <div id="create-screen" class="screen active">
         <div class="create-card">
@@ -96,16 +101,16 @@
                 <img src="assets/peluche.svg" alt="Peluche">
             </div>
             <div id="star" class="interactive-object" data-sound="star" title="Tócame">
-                <span class="obj-emoji">⭐</span>
+                <img src="assets/star.svg" alt="Estrella">
             </div>
             <div id="flower" class="interactive-object" data-sound="flower" title="Tócame">
-                <span class="obj-emoji">🌷</span>
+                <img src="assets/flower.svg" alt="Flor">
             </div>
             <div id="heart" class="interactive-object" data-sound="heart" title="Tócame">
-                <span class="obj-emoji">💖</span>
+                <img src="assets/heart.svg" alt="Corazón">
             </div>
             <div id="feather" class="interactive-object" data-sound="feather" title="Tócame">
-                <span class="obj-emoji">🪶</span>
+                <img src="assets/feather.svg" alt="Pluma">
             </div>
 
             <!-- Pollito + Caja -->
@@ -136,6 +141,7 @@
 
         <!-- Feedback de toques -->
         <div id="touch-feedback" class="touch-feedback hidden"></div>
+        <div id="shake-fallback" class="shake-fallback hidden">📱 Agita aquí</div>
         <footer class="footer">© 2026 LyPaw (Manuel Fuentes Cruz). Todos los derechos reservados.</footer>
     </div>
 
