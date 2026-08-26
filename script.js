@@ -41,7 +41,7 @@
         boxOpen: false,
         shakeCount: 0,
         touchCount: 0,
-        neededShakes: 40,
+        neededShakes: 30,
         neededTouches: 8,
         isPreview: false,
         boxAlreadyOpenedToday: false,
@@ -497,10 +497,10 @@
     function setupShakeDetection() {
         let lastX = 0, lastY = 0, lastZ = 0;
         let lastTime = 0;
-        const threshold = 50;
-        const DECAY_RATE = 0.4;
+        const threshold = 28;
+        const DECAY_RATE = 0.3;
         const DECAY_INTERVAL = 800;
-        const MAX_WINDOW = 4000;
+        const MAX_WINDOW = 5000;
 
         if (typeof DeviceMotionEvent !== 'undefined') {
             if (typeof DeviceMotionEvent.requestPermission === 'function') {
