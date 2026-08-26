@@ -34,6 +34,8 @@
     const shakeProgress = document.getElementById('shake-progress');
     const shakeFill = document.getElementById('shake-fill');
     const shakeText = document.getElementById('shake-text');
+    const loadingScreen = document.getElementById('loading-screen');
+    const shakeFallback = document.getElementById('shake-fallback');
 
     // ========== STATE ==========
     let state = {
@@ -41,7 +43,7 @@
         boxOpen: false,
         shakeCount: 0,
         touchCount: 0,
-        neededShakes: 30,
+        neededShakes: 40,
         neededTouches: 8,
         isPreview: false,
         boxAlreadyOpenedToday: false,
@@ -246,6 +248,35 @@
                     if (y < 0) { y = 0; this.velY = Math.abs(this.velY) * this.bounce; }
                     if (y + rect.height > h) { y = h - rect.height; this.velY = -Math.abs(this.velY) * this.bounce; }
 
+                    const chickArea = document.getElementById('chick-area');
+                    const chickRect = chickArea.getBoundingClientRect();
+                    const oLeft = x + sceneRect.left;
+                    const oTop = y + sceneRect.top;
+                    const oRight = oLeft + rect.width;
+                    const oBottom = oTop + rect.height;
+
+                    if (oRight > chickRect.left && oLeft < chickRect.right &&
+                        oBottom > chickRect.top && oTop < chickRect.bottom) {
+                        const overlapX = Math.min(oRight - chickRect.left, chickRect.right - oLeft);
+                        const overlapY = Math.min(oBottom - chickRect.top, chickRect.bottom - oTop);
+
+                        if (overlapX < overlapY) {
+                            if (oLeft + rect.width / 2 < chickRect.left + chickRect.width / 2) {
+                                x = chickRect.left - sceneRect.left - rect.width;
+                            } else {
+                                x = chickRect.right - sceneRect.left;
+                            }
+                            this.velX = -this.velX * this.bounce;
+                        } else {
+                            if (oTop + rect.height / 2 < chickRect.top + chickRect.height / 2) {
+                                y = chickRect.top - sceneRect.top - rect.height;
+                            } else {
+                                y = chickRect.bottom - sceneRect.top;
+                            }
+                            this.velY = -this.velY * this.bounce;
+                        }
+                    }
+
                     this.el.style.left = x + 'px';
                     this.el.style.top = y + 'px';
                     this.el.style.right = 'auto';
@@ -307,21 +338,29 @@
         state.isPreview = params.get('preview') === 'true';
 
         if (message && sender) {
+            createScreen.classList.remove('active');
             btnBack.style.display = state.isPreview ? '' : 'none';
-            showProposal(sender, message);
 
-            if (tzs) {
-                startClocks(tzs.split(','));
-            }
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                setTimeout(() => { loadingScreen.style.display = 'none'; }, 600);
 
-            if (!state.isPreview && wasBoxOpenedToday()) {
-                state.boxAlreadyOpenedToday = true;
-                state.chickAwake = false;
-                chickImg.src = 'assets/chick_sleep.PNG';
-                box.classList.add('disappear');
-                messageArea.classList.add('hidden');
-            }
+                showProposal(sender, message);
+
+                if (tzs) {
+                    startClocks(tzs.split(','));
+                }
+
+                if (!state.isPreview && wasBoxOpenedToday()) {
+                    state.boxAlreadyOpenedToday = true;
+                    state.chickAwake = false;
+                    chickImg.src = 'assets/chick_sleep.PNG';
+                    box.classList.add('disappear');
+                    messageArea.classList.add('hidden');
+                }
+            }, 1000);
         } else {
+            loadingScreen.style.display = 'none';
             showCreate();
         }
 
@@ -497,26 +536,11 @@
     function setupShakeDetection() {
         let lastX = 0, lastY = 0, lastZ = 0;
         let lastTime = 0;
-        const threshold = 28;
-        const DECAY_RATE = 0.3;
+        const threshold = 50;
+        const DECAY_RATE = 0.4;
         const DECAY_INTERVAL = 800;
         const MAX_WINDOW = 5000;
-
-        if (typeof DeviceMotionEvent !== 'undefined') {
-            if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                document.addEventListener('click', () => {
-                    DeviceMotionEvent.requestPermission()
-                        .then(response => {
-                            if (response === 'granted') {
-                                window.addEventListener('devicemotion', handleMotion);
-                            }
-                        })
-                        .catch(console.error);
-                }, { once: true });
-            } else {
-                window.addEventListener('devicemotion', handleMotion);
-            }
-        }
+        let motionDetected = false;
 
         function processShake() {
             const now = Date.now();
@@ -562,6 +586,8 @@
             const acc = e.accelerationIncludingGravity;
             if (!acc) return;
 
+            motionDetected = true;
+
             const currentTime = Date.now();
             if ((currentTime - lastTime) < 100) return;
 
@@ -583,6 +609,54 @@
             lastY = y;
             lastZ = z;
         }
+
+        if (typeof DeviceMotionEvent !== 'undefined') {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                document.addEventListener('click', () => {
+                    DeviceMotionEvent.requestPermission()
+                        .then(response => {
+                            if (response === 'granted') {
+                                window.addEventListener('devicemotion', handleMotion);
+                            }
+                        })
+                        .catch(console.error);
+                }, { once: true });
+            } else {
+                window.addEventListener('devicemotion', handleMotion);
+            }
+        }
+
+        setTimeout(() => {
+            if (!motionDetected && !state.boxAlreadyOpenedToday) {
+                shakeFallback.classList.remove('hidden');
+                let fallbackStartY = 0;
+                let fallbackActive = false;
+                let fallbackLastY = 0;
+
+                shakeFallback.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    fallbackActive = true;
+                    fallbackStartY = e.touches[0].clientY;
+                    fallbackLastY = fallbackStartY;
+                }, { passive: false });
+
+                shakeFallback.addEventListener('touchmove', (e) => {
+                    if (!fallbackActive) return;
+                    e.preventDefault();
+                    const currentY = e.touches[0].clientY;
+                    const delta = Math.abs(currentY - fallbackLastY);
+                    if (delta > 15) {
+                        processShake();
+                        showTouchFeedback('📱✨');
+                        fallbackLastY = currentY;
+                    }
+                }, { passive: false });
+
+                shakeFallback.addEventListener('touchend', () => {
+                    fallbackActive = false;
+                });
+            }
+        }, 2000);
 
         document.addEventListener('keydown', (e) => {
             if (state.boxOpen || state.boxAlreadyOpenedToday) return;
