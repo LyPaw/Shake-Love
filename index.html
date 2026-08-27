@@ -158,7 +158,7 @@
                 <div class="gift-question-label">Pregunta o mensaje de dentro:</div>
                 <textarea id="gift-content" placeholder="Escribe la pregunta o mensaje..." maxlength="200" rows="4"></textarea>
                 <div id="gift-cajita-preview" class="hidden">
-                    <img src="assets/regalo.svg" alt="Regalo">
+                    <img src="assets/cofre.png" alt="Regalo">
                 </div>
                 <div class="modal-actions">
                     <button id="btn-gift-cancel" class="btn-gift-cancel">Cancelar</button>
@@ -167,7 +167,7 @@
             </div>
         </div>
 
-        <!-- Modal para leer una nota o abrir un regalo -->
+        <!-- Modal para leer una nota -->
         <div id="carta-modal" class="modal hidden">
             <div class="modal-card">
                 <h2 id="carta-title"></h2>
@@ -176,6 +176,23 @@
                     <button id="btn-carta-delete" class="btn-gift-delete">Eliminar</button>
                 </div>
                 <button id="btn-carta-close" class="btn-gift-cancel">Cerrar</button>
+            </div>
+        </div>
+
+        <!-- Modal de regalo (pregunta + respuesta) -->
+        <div id="regalo-modal" class="modal hidden">
+            <div class="modal-card">
+                <h2 id="regalo-title"></h2>
+                <p id="regalo-question"></p>
+                <div id="regalo-answer-box" class="hidden">
+                    <p class="regalo-answer-label">Respuesta:</p>
+                    <p id="regalo-answer-text"></p>
+                </div>
+                <div id="regalo-actions" class="hidden">
+                    <button id="btn-regalo-no" class="btn-gift-cancel btn-answer btn-no">No 😢</button>
+                    <button id="btn-regalo-si" class="btn-gift-submit btn-answer btn-yes">Sí 💕</button>
+                </div>
+                <button id="btn-regalo-close" class="btn-gift-cancel">Cerrar</button>
             </div>
         </div>
 
