@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="author" content="LyPaw (Manuel Fuentes Cruz)">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; form-action 'self' https://wa.me">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://aukcttjroidmbggmlzmn.supabase.co https://*.supabase.co; frame-ancestors 'none'; form-action 'self' https://wa.me">
     <title>Shake & Love</title>
     <link rel="icon" type="image/png" href="assets/logo.png">
     <link rel="stylesheet" href="style.css">
@@ -139,12 +139,48 @@
             </div>
         </div>
 
+        <!-- Regalos y cartas compartidos -->
+        <div id="gift-zone">
+            <button id="btn-add-gift" class="btn-add-gift">💝 Dejar un regalo</button>
+            <div id="gift-list"></div>
+        </div>
+
+        <!-- Modal de regalo -->
+        <div id="gift-modal" class="modal hidden">
+            <div class="modal-card">
+                <h2 id="gift-modal-title">Deja tu regalo</h2>
+                <div class="gift-type-select">
+                    <button id="gift-type-carta" class="gift-type-btn active">Carta</button>
+                    <button id="gift-type-cajita" class="gift-type-btn">Regalo</button>
+                </div>
+                <textarea id="gift-content" placeholder="Escribe tu carta aquí..." maxlength="500" rows="4"></textarea>
+                <div id="gift-cajita-preview" class="hidden">
+                    <img src="assets/cofre.png" alt="Regalo">
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-gift-cancel" class="btn-gift-cancel">Cancelar</button>
+                    <button id="btn-gift-submit" class="btn-gift-submit">Enviar 💌</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para leer una carta -->
+        <div id="carta-modal" class="modal hidden">
+            <div class="modal-card">
+                <h2 id="carta-title"></h2>
+                <p id="carta-body"></p>
+                <button id="btn-carta-close" class="btn-gift-cancel">Cerrar</button>
+            </div>
+        </div>
+
         <!-- Feedback de toques -->
         <div id="touch-feedback" class="touch-feedback hidden"></div>
         <div id="shake-fallback" class="shake-fallback hidden">📱 Agita aquí</div>
         <footer class="footer">© 2026 LyPaw (Manuel Fuentes Cruz). Todos los derechos reservados.</footer>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
