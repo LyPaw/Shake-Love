@@ -1,9 +1,9 @@
 # Shake & Love
 
 **Autor:** LyPaw (Manuel Fuentes Cruz)
-**Año:** 2026
+**Ano:** 2026
 
-Pagina web romantica y minimalista construida con HTML, CSS y JavaScript puro, sin frameworks ni backend. El destinatario accede a una escena interactiva donde un pollito duerme sobre una caja; al agitar el movil, el pollito despierta y la caja se abre revelando un mensaje personalizado.
+Pagina web romantica y minimalista construida con HTML, CSS y JavaScript puro, sin frameworks frontend. El destinatario accede a una escena interactiva donde un pollito duerme sobre una caja; al agitar el movil, el pollito despierta y la caja se abre revelando un mensaje personalizado. La app usa **Supabase** como backend para habitaciones compartidas, enlaces ilegibles por codigo y un sistema de notas y regalos persistidos entre dispositivos.
 
 ---
 
@@ -29,14 +29,26 @@ El codigo fuente se proporciona unicamente como referencia tecnica.
 
 ## Arquitectura
 
-Aplicacion estatica de una sola pagina (SPA) desplegada en GitHub Pages. No hay servidor backend; toda la logica se ejecuta en el navegador.
+Aplicacion estatica de una sola pagina (SPA) desplegada en GitHub Pages, con backend gestionado por **Supabase** (Postgres + RLS). Toda la logica de interfaz se ejecuta en el navegador; los datos (habitaciones, notas y regalos) se leen/escriben mediante llamadas `rpc()` a funciones `security definer`.
 
 ```
-index.html          -> Estructura HTML (dos pantallas: creacion y propuesta)
+index.html          -> Estructura HTML (creacion, propuesta, modales de nota/regalo)
 style.css           -> Estilos CSS con paleta pastel y animaciones
-script.js           -> Logica completa: interaccion, fisica, sonido, almacenamiento
-assets/             -> Imagenes PNG/SVG del pollito, cofre, objetos, logo
+config.js           -> Cliente Supabase (`supabaseClient`) + sesion anonima
+script.js           -> Logica: interaccion, fisica, sonido, RPC, URLs por codigo
+assets/             -> Imagenes PNG/SVG del pollito, cofre, nota, regalo, logo
 ```
+
+### Configuracion (config.js)
+- Crea el cliente con `window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)`.
+- La variable se llama **`supabaseClient`** (no `supabase`) para no colisionar con el global `supabase` declarado por el bundle UMD de la CDN.
+- `ensureAnonSession()` firma de forma anonima (`signInAnonymously`) si no hay sesion, ya que la app no usa login.
+- La clave anon es **publica por diseno**; la de `service_role` nunca se expone.
+
+### Backend Supabase (RLS endurecido)
+- Acceso solo via funciones `security definer`: `get_room`, `get_gifts`, `create_room`, `create_gift`, `delete_gift`, `delete_room`, `answer_gift`. No hay acceso directo `select` desde el cliente.
+- Las consultas exigen el codigo exacto de la habitacion (`p_codigo` / `p_room_code`), por lo que un enlace con codigo desconocido devuelve vacio.
+- Tablas: `rooms` (codigo, remitente, mensaje, zonas horarias, autor) y `gifts` (tipo, contenido, autor, respuesta `si`/`no`, respondido-por).
 
 ## Diseno
 
@@ -64,26 +76,47 @@ Las decoraciones de fondo (estrellas, nubes, hojas, destellos) son SVGs inline e
 
 ```
 Pantalla de Creacion                  Pantalla de Propuesta
-+-------------------+                 +-------------------+
-| Formulario con    |   URL params    | Relojes (tz)      |
-| nombre + mensaje  | ------------->  | Escena interactiva |
-| + zonas horarias  |  ?sender=...   | Pollito durmiendo  |
-|                   |  &message=...  | Caja cerrada       |
-| Boton "Generar"   |  &tz=...       | Objetos arrastrables|
-+-------------------+                 +-------------------+
++-------------------+                 +---------------------------+
+| Formulario con    |   ?r=CODIGO     | Relojes (tz)              |
+| nombre + mensaje  | ------------->  | Escena interactiva         |
+| + zonas horarias  |  (codigo       | Pollito durmiendo          |
+|                   |   ilegible)     | Caja cerrada               |
+| Boton "Generar"   |                 | Objetos arrastrables       |
++-------------------+                 | Notas y regalos (escena)   |
                                             |
-                                      Agitar movil (5x)
+                                      Agitar movil (40x)
                                             |
                                       Pollito despierta
-                                      Caja desaparece
+                                      Caja desaparece (permanente)
                                             |
                                       Mensaje visible
                                       Botones Si / No
 ```
 
+- El enlace que se comparte es **`?r=CODIGO`**: el mensaje, el remitente y las zonas horarias se cargan via RPC despues de abrir el enlace, por lo que **nunca aparecen en la URL**.
+- `?preview=true` mantiene la vista previa local al crear el enlace (sin persistir).
+- Al abrir el cofre una vez, este **desaparece y la mecanica de agitar queda bloqueada de forma permanente** (tanto si se responde Si como No), evitando reabrirlo.
+
+## Notas y Regalos (flujo de regalo)
+
+Ademas del cofre principal, cada persona de la habitacion puede anadir objetos a la escena:
+
+- **Nota (sobre, `assets/nota.svg`)** -> abre `#carta-modal` con el texto al tocarlo. Las notas propias muestran boton de eliminar.
+- **Regalo (cofre, `assets/cofre.png`)** -> abre `#regalo-modal` con una pregunta y botones Si/No. Solo la persona que no es autora puede responder una vez; la respuesta (Si/No) queda **persistida** en Supabase y se muestra como notita. El autor ve la pregunta pero no puede responder.
+- Ambos son objetos fisicos movibles en la escena, auto-colocados, con color segun el autor (tuyas vs ajenas).
+- Se crean desde el boton "➕ Anadir" con pestanas Nota/Regalo.
+- El regalo principal (cofre) usa respuesta visual sin persistir; la persistencia aplica a los regalos añadidos en la escena.
+
+## Interaccion Tactil (tap vs arrastre)
+
+- Cada objeto distingue **tocar** (abrir nota/regalo) de **arrastrar** (moverlo).
+- El tap se detecta en `touchend`/`mouseup` si el objeto no se movio mas de 8px (bandera `moved`).
+- No se depende del evento sintetico `click` (que algunos navegadores moviles suprimen al hacer `preventDefault` en `touchstart`), por lo que **abrir sobres y regalos funciona en movil**.
+- Se ignora la secuencia de raton sintetica posterior a un toque (ventana de 500ms) para evitar abrir dos veces.
+
 ## Fisica Ice-Rink (Objetos Arrastrables)
 
-Los 6 objetos interactivos (almohada, peluche, estrella, flor, corazon, pluma) utilizan un sistema de fisica basado en un modelo "pista de hielo":
+Los 6 objetos interactivos (almohada, peluche, estrella, flor, corazon, pluma) y las notas/regalos utilizan un sistema de fisica basado en un modelo "pista de hielo":
 
 - **Friccion:** 0.992 (los objetos deslizan y se frenan gradualmente)
 - **Rebote:** 0.7 (al chocar contra los limites de la escena)
@@ -112,35 +145,30 @@ Los sonidos de "Si" y "No" usan secuencias de notas y osciladores descendentes. 
 
 - Se usa `DeviceMotionEvent` para acceder al acelerometro del dispositivo
 - En iOS 13+, se requiere `DeviceMotionEvent.requestPermission()` en respuesta a una interaccion del usuario (click)
-- El umbral de deteccion es `speed > 25` (calculado como la variacion absoluta de aceleracion incluyendo gravedad)
+- El umbral de deteccion es `speed > 50` (calculado como la variacion absoluta de aceleracion incluyendo gravedad)
 - Se ignoran eventos con menos de 100ms de diferencia para evitar duplicados
-- Se requieren 5 sacudidas consecutivas para despertar al pollito
+- Se requieren **40 sacudidas** dentro de una ventana de 5s para despertar al pollito, con decaimiento de progreso si se deja de agitar
 - En escritorio, las teclas Espacio y Enter simulan una sacudida
+- Si no se detecta movimiento en 2s se muestra un **control táctil de respaldo** (frotar) para dispositivos sin acelerometro
+- Una vez abierto el cofre, la mecánica de sacudida queda **bloqueada permanentemente** (bandera `chestOpened`), tambien para el respaldo y el teclado
 
 ## Sistema de Relojes (Zonas Horarias IANA)
 
-- Se pobla un `<select multiple>` con todas las zonas horarias soportadas por `Intl.supportedValuesOf('timeZone')`
+- Se puebla un `<select multiple>` con todas las zonas horarias soportadas por `Intl.supportedValuesOf('timeZone')`
 - Las zonas se agrupan por continente en `<optgroup>` (Africa, America, Asia, Europe, etc.)
 - Los relojes se muestran en la parte superior de la pantalla de propuesta
 - Se actualizan cada 15 segundos usando `toLocaleTimeString('es-ES', { timeZone: zone })`
 - Formato: `CiudadName HH:MM`
-- Las zonas se pasan como parametro URL: `?tz=Europe/Madrid,America/Mexico_City`
-
-## Almacenamiento Local (localStorage)
-
-- Cada vez que la caja se abre, se registra en `localStorage` con una key basada en la fecha actual
-- Formato de la key: `box_{sender}_{message}_{YYYY-MM-DD}`
-- Esto permite que la caja solo se pueda abrir una vez por dia por cada enlace
-- Si la caja ya fue abierta hoy, el pollito permanece dormido y la caja invisible
-- En modo preview (`?preview=true`), se ignora el control diario
+- Las zonas se guardan en la habitacion y se cargan via RPC al abrir el enlace
 
 ## Seguridad
 
-- **XSS:** Se usa `textContent` (no `innerHTML`) para inyectar el nombre y mensaje del remitente, lo cual escapa automaticamente el HTML
-- **Sanitizacion:** Los parametros URL se sanitizan con una funcion que elimina tags HTML y limita la longitud
-- **Validacion de timezone:** Solo se aceptan zonas IANA validas via `Intl.supportedValuesOf`
-- **Content Security Policy:** Se incluye meta CSP que restringe fuentes a `'self'` con excepciones para WhatsApp
-- **localStorage:** Las keys se sanitizan para evitar caracteres problematicos
+- **XSS:** Se usa `textContent` (no `innerHTML`) para inyectar nombres, mensajes y contenidos, lo cual escapa automaticamente el HTML
+- **Sanitizacion:** Los parametros URL y los contenidos de notas/regalos se sanitizan (se eliminan tags HTML y `javascript:` y se limita la longitud)
+- **RLS + RPC:** El acceso a datos usa funciones `security definer` que exigen el codigo exacto de la habitacion; no hay acceso directo a las tablas desde el cliente
+- **Ocultacion de datos:** El mensaje, remitente y zonas horarias navegan via RPC, no en la URL (enlaces ilegibles)
+- **Sesion anonima:** Sin login; se autentica de forma anonima contra Supabase
+- **Content Security Policy:** Se incluye meta CSP que restringe fuentes a `'self'` con excepciones para `*.supabase.co` y la CDN de `supabase-js`
 
 ## Responsive
 
@@ -148,6 +176,12 @@ La aplicacion se adapta a tres breakpoints:
 
 | Breakpoint | Pollito | Caja | Objetos | Mensaje |
 |------------|---------|------|---------|---------|
-| < 480px | 216px | 180px | 108px | 2.3rem |
-| 480-768px | 270px | 216px | 144px | 2.9rem |
-| > 768px | 324px | 252px | 180px | 3.6rem |
+| < 480px | 216px | 180px | 100px | 2.3rem |
+| 480-768px | 270px | 216px | 100px | 2.9rem |
+| > 768px | 324px | 252px | 100px | 3.6rem |
+
+## Despliegue
+
+GitHub Pages sirve la rama `main` como sitio estatico. No se requiere paso de build. HTTPS es proporcionado automaticamente por GitHub.
+
+URL de produccion: `https://lypaw.github.io/Shake-Love/`
