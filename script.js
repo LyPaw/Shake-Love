@@ -224,9 +224,8 @@
         el.style.top = giftSpotTemplate[posIndex % giftSpotTemplate.length].top;
         el.style.left = giftSpotTemplate[posIndex % giftSpotTemplate.length].left;
         el.title = g.type === 'carta' ? 'Nota' : 'Regalo';
-        el.addEventListener('click', (e) => openGiftContent(g, el));
         sceneGifts.appendChild(el);
-        state.giftPhysics.push(new DraggablePhysics(el));
+        state.giftPhysics.push(new DraggablePhysics(el, () => openGiftContent(g, el)));
     }
 
     function openGiftContent(g, el) {
@@ -255,14 +254,14 @@
         state.giftMode = mode;
         giftTypeCarta.classList.toggle('active', mode === 'carta');
         giftTypeCajita.classList.toggle('active', mode === 'cajita');
-        giftContent.classList.toggle('hidden', mode === 'cajita');
+        giftContent.classList.remove('hidden');
         giftCajitaPreview.classList.toggle('hidden', mode !== 'cajita');
         if (mode === 'cajita') {
             giftModalTitle.textContent = 'Añade un regalo';
-            giftContent.placeholder = '';
+            giftContent.placeholder = 'Escribe la pregunta que tendrá el regalo...';
         } else {
             giftModalTitle.textContent = 'Añade una nota';
-            giftContent.placeholder = 'Escribe la pregunta o mensaje...';
+            giftContent.placeholder = 'Escribe la nota...';
         }
     }
 
@@ -311,10 +310,14 @@
     const physicsObjects = [];
 
     class DraggablePhysics {
-        constructor(element) {
+        constructor(element, onTap) {
             this.el = element;
+            this.onTap = onTap || null;
             this.isDragging = false;
             this.hasBeenDragged = false;
+            this.moved = false;
+            this.startX = 0;
+            this.startY = 0;
             this.offsetX = 0;
             this.offsetY = 0;
             this.velX = 0;
@@ -328,6 +331,7 @@
             this.onDragStart = this.onDragStart.bind(this);
             this.onDragMove = this.onDragMove.bind(this);
             this.onDragEnd = this.onDragEnd.bind(this);
+            this.onClickBound = this.onClickBound.bind(this);
             this.animate = this.animate.bind(this);
 
             this.init();
@@ -338,16 +342,27 @@
             this.el.style.cursor = 'grab';
             this.el.addEventListener('mousedown', this.onDragStart);
             this.el.addEventListener('touchstart', this.onDragStart, { passive: false });
+            if (this.onTap) {
+                this.el.addEventListener('click', this.onClickBound);
+            }
             this.animate();
         }
 
         destroy() {
             this.el.removeEventListener('mousedown', this.onDragStart);
             this.el.removeEventListener('touchstart', this.onDragStart);
+            if (this.onTap) {
+                this.el.removeEventListener('click', this.onClickBound);
+            }
             document.removeEventListener('mousemove', this.onDragMove);
             document.removeEventListener('mouseup', this.onDragEnd);
             document.removeEventListener('touchmove', this.onDragMove);
             document.removeEventListener('touchend', this.onDragEnd);
+        }
+
+        onClickBound(e) {
+            if (this.moved) return;
+            if (this.onTap) this.onTap(e);
         }
 
         getClientPos(e) {
@@ -365,6 +380,9 @@
 
             this.isDragging = true;
             this.hasBeenDragged = true;
+            this.moved = false;
+            this.startX = pos.x;
+            this.startY = pos.y;
             this.offsetX = pos.x - rect.left;
             this.offsetY = pos.y - rect.top;
             this.lastX = pos.x;
@@ -388,6 +406,10 @@
             const pos = this.getClientPos(e);
             const now = Date.now();
             const dt = now - this.lastTime;
+
+            if (Math.abs(pos.x - this.startX) + Math.abs(pos.y - this.startY) > 8) {
+                this.moved = true;
+            }
 
             if (dt > 0) {
                 this.velX = (pos.x - this.lastX) / dt * 16;
