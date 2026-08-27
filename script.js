@@ -125,7 +125,7 @@
         let codigo = genRoomCode();
         let created = false;
         for (let attempt = 0; attempt < 5 && !created; attempt++) {
-            const { data, error } = await supabase.rpc('create_room', {
+            const { data, error } = await supabaseClient.rpc('create_room', {
                 p_codigo: codigo,
                 p_sender: sender,
                 p_message: message,
@@ -137,24 +137,24 @@
             }
             created = true;
         }
-        const { data: user } = await supabase.auth.getUser();
+        const { data: user } = await supabaseClient.auth.getUser();
         state.myAuthorId = user?.user?.id || null;
         return codigo;
     }
 
     async function openRoom(codigo) {
         await ensureAnonSession();
-        const { data, error } = await supabase.rpc('get_room', { p_codigo: codigo });
+        const { data, error } = await supabaseClient.rpc('get_room', { p_codigo: codigo });
         if (error) throw error;
         if (!data || data.length === 0) throw new Error('NO_ROOM');
-        const { data: user } = await supabase.auth.getUser();
+        const { data: user } = await supabaseClient.auth.getUser();
         state.myAuthorId = user?.user?.id || null;
         state.roomCode = codigo;
         return data[0];
     }
 
     async function loadGifts(roomCode) {
-        const { data, error } = await supabase.rpc('get_gifts', { p_room_code: roomCode });
+        const { data, error } = await supabaseClient.rpc('get_gifts', { p_room_code: roomCode });
         if (error) throw error;
         state.gifts = data || [];
         return state.gifts;
@@ -162,7 +162,7 @@
 
     async function saveGift(type, content) {
         if (!state.roomCode) return;
-        const { data, error } = await supabase.rpc('create_gift', {
+        const { data, error } = await supabaseClient.rpc('create_gift', {
             p_room_code: state.roomCode,
             p_type: type,
             p_content: content,
@@ -173,7 +173,7 @@
     }
 
     async function deleteGift(giftId) {
-        const { error } = await supabase.rpc('delete_gift', { p_gift_id: giftId });
+        const { error } = await supabaseClient.rpc('delete_gift', { p_gift_id: giftId });
         if (error) throw error;
     }
 
