@@ -39,7 +39,7 @@
 
     const giftZone = document.getElementById('gift-zone');
     const btnAddGift = document.getElementById('btn-add-gift');
-    const giftList = document.getElementById('gift-list');
+    const sceneGifts = document.getElementById('scene-gifts');
     const giftModal = document.getElementById('gift-modal');
     const giftModalTitle = document.getElementById('gift-modal-title');
     const giftTypeCarta = document.getElementById('gift-type-carta');
@@ -51,6 +51,8 @@
     const cartaModal = document.getElementById('carta-modal');
     const cartaTitle = document.getElementById('carta-title');
     const cartaBody = document.getElementById('carta-body');
+    const cartaActions = document.getElementById('carta-actions');
+    const btnCartaDelete = document.getElementById('btn-carta-delete');
     const btnCartaClose = document.getElementById('btn-carta-close');
 
     // ========== STATE ==========
@@ -66,6 +68,8 @@
         myAuthorId: null,
         gifts: [],
         giftMode: 'carta',
+        giftPhysics: [],
+        viewGift: null,
         shakeStartTime: 0,
         shakeActive: false,
         lastShakeTime: 0,
@@ -177,61 +181,66 @@
         if (error) throw error;
     }
 
-    function renderGifts() {
-        giftList.innerHTML = '';
-        if (state.isPreview) return;
-        state.gifts.forEach(g => {
-            const card = document.createElement('div');
-            card.className = 'gift-item';
-            const mine = g.author_id && state.myAuthorId && g.author_id === state.myAuthorId;
-            card.classList.add(mine ? 'gift-mine' : 'gift-other');
+    const GIFT_SRC = {
+        carta: 'assets/nota.svg',
+        cajita: 'assets/regalo.svg'
+    };
 
-            if (g.type === 'carta') {
-                if (mine) {
-                    card.classList.add('gift-carta');
-                    const text = document.createElement('span');
-                    text.className = 'gift-carta-text';
-                    text.textContent = g.content || '';
-                    card.appendChild(text);
-                    const del = document.createElement('button');
-                    del.className = 'gift-delete';
-                    del.textContent = '✕';
-                    del.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        await deleteGift(g.id);
-                        state.gifts = state.gifts.filter(x => x.id !== g.id);
-                        renderGifts();
-                    });
-                    card.appendChild(del);
-                } else {
-                    card.classList.add('gift-carta');
-                    card.title = 'Leer carta';
-                    const envelope = document.createElement('span');
-                    envelope.className = 'gift-carta-icon';
-                    envelope.textContent = '💌';
-                    card.appendChild(envelope);
-                    card.addEventListener('click', () => openCarta(g));
-                }
-            } else {
-                card.classList.add('gift-cajita');
-                const img = document.createElement('img');
-                img.src = 'assets/cofre.png';
-                img.alt = 'Regalo';
-                if (mine) img.classList.add('gift-cajita-mine');
-                card.appendChild(img);
-                card.title = g.content || 'Un regalo';
-                card.addEventListener('click', () => {
-                    if (g.content) showMessage(g.content, 2500);
-                });
-            }
-            giftList.appendChild(card);
+    const giftSpotTemplate = [
+        { top: '12%', left: '70%' },
+        { top: '18%', left: '10%' },
+        { top: '45%', left: '78%' },
+        { top: '60%', left: '8%' },
+        { top: '72%', left: '72%' },
+        { top: '25%', left: '82%' },
+        { top: '55%', left: '5%' },
+        { top: '35%', left: '3%' },
+        { top: '78%', left: '25%' },
+        { top: '10%', left: '35%' }
+    ];
+
+    function isMineGift(g) {
+        return g.author_id && state.myAuthorId && g.author_id === state.myAuthorId;
+    }
+
+    function renderGifts() {
+        state.giftPhysics.forEach(p => p.destroy());
+        state.giftPhysics = [];
+        sceneGifts.innerHTML = '';
+        if (state.isPreview) return;
+        state.gifts.forEach((g, i) => {
+            appendGiftObject(g, i);
         });
     }
 
-    function openCarta(g) {
-        cartaTitle.textContent = `Carta de ${g.author_name || 'alguien'}`;
-        cartaBody.textContent = g.content || '...';
-        cartaModal.classList.remove('hidden');
+    function appendGiftObject(g, posIndex) {
+        const el = document.createElement('div');
+        el.className = 'scene-gift' + (isMineGift(g) ? ' gift-mine' : ' gift-other');
+        const img = document.createElement('img');
+        img.src = GIFT_SRC[g.type] || GIFT_SRC.carta;
+        img.alt = g.type === 'carta' ? 'Nota' : 'Regalo';
+        el.appendChild(img);
+        el.dataset.giftId = g.id;
+        el.style.top = giftSpotTemplate[posIndex % giftSpotTemplate.length].top;
+        el.style.left = giftSpotTemplate[posIndex % giftSpotTemplate.length].left;
+        el.title = g.type === 'carta' ? 'Nota' : 'Regalo';
+        el.addEventListener('click', (e) => openGiftContent(g, el));
+        sceneGifts.appendChild(el);
+        state.giftPhysics.push(new DraggablePhysics(el));
+    }
+
+    function openGiftContent(g, el) {
+        if (g.type === 'carta') {
+            cartaTitle.textContent = (isMineGift(g) ? 'Tu nota' : `Nota de ${g.author_name || 'alguien'}`);
+            cartaBody.textContent = g.content || '...';
+            cartaActions.classList.remove('hidden');
+            btnCartaDelete.style.display = isMineGift(g) ? '' : 'none';
+            state.viewGift = g;
+            cartaModal.classList.remove('hidden');
+        } else {
+            const q = g.content || 'Un regalo para ti 💝';
+            showMessage((isMineGift(g) ? 'Tu regalo: ' : '') + q, 3500);
+        }
     }
 
     function openGiftModal() {
@@ -249,11 +258,11 @@
         giftContent.classList.toggle('hidden', mode === 'cajita');
         giftCajitaPreview.classList.toggle('hidden', mode !== 'cajita');
         if (mode === 'cajita') {
-            giftModalTitle.textContent = 'Elige un regalo';
+            giftModalTitle.textContent = 'Añade un regalo';
             giftContent.placeholder = '';
         } else {
-            giftModalTitle.textContent = 'Deja tu regalo';
-            giftContent.placeholder = 'Escribe tu carta aquí...';
+            giftModalTitle.textContent = 'Añade una nota';
+            giftContent.placeholder = 'Escribe la pregunta o mensaje...';
         }
     }
 
@@ -263,22 +272,38 @@
 
     function closeCartaModal() {
         cartaModal.classList.add('hidden');
+        state.viewGift = null;
     }
 
     async function handleGiftSubmit() {
         if (!state.roomCode) return;
-        const content = sanitize(giftContent.value.trim(), 500);
-        if (state.giftMode === 'carta' && !content) return;
+        const content = sanitize(giftContent.value.trim(), 200);
+        if (!content) { showMessage('Escribe algo primero ✍️', 2000); return; }
 
         try {
-            const gift = await saveGift(state.giftMode, content || (state.giftMode === 'cajita' ? 'Un regalo para ti 💝' : ''));
+            const gift = await saveGift(state.giftMode, content);
             state.gifts.push(gift);
-            renderGifts();
+            appendGiftObject(gift, state.gifts.length - 1);
             closeGiftModal();
-            showMessage('¡Regalo enviado! 💝', 2000);
+            showMessage(state.giftMode === 'carta' ? '¡Nota añadida! 💌' : '¡Regalo añadido! 🎁', 2000);
         } catch (err) {
             console.error(err);
-            showMessage('No se pudo enviar 🙈', 3000);
+            showMessage('No se pudo añadir 🙈', 3000);
+        }
+    }
+
+    async function handleCartaDelete() {
+        const g = state.viewGift;
+        if (!g) return;
+        try {
+            await deleteGift(g.id);
+            state.gifts = state.gifts.filter(x => x.id !== g.id);
+            renderGifts();
+            closeCartaModal();
+            showMessage('Nota eliminada 🗑️', 2000);
+        } catch (err) {
+            console.error(err);
+            showMessage('No se pudo eliminar 🙈', 3000);
         }
     }
 
@@ -585,6 +610,8 @@
 
         giftZone.classList.remove('hidden');
 
+        state.giftPhysics.forEach(p => p.destroy());
+        state.giftPhysics = [];
         physicsObjects.forEach(p => p.destroy());
         physicsObjects.length = 0;
 
@@ -610,6 +637,7 @@
         btnAddGift.addEventListener('click', openGiftModal);
         btnGiftCancel.addEventListener('click', closeGiftModal);
         btnCartaClose.addEventListener('click', closeCartaModal);
+        btnCartaDelete.addEventListener('click', handleCartaDelete);
         giftTypeCarta.addEventListener('click', () => setGiftMode('carta'));
         giftTypeCajita.addEventListener('click', () => setGiftMode('cajita'));
         btnGiftSubmit.addEventListener('click', handleGiftSubmit);
@@ -722,6 +750,9 @@
         btnYes.style.display = '';
         btnNo.style.display = '';
         proposalScreen.classList.remove('awakening');
+        state.giftPhysics.forEach(p => p.destroy());
+        state.giftPhysics = [];
+        sceneGifts.innerHTML = '';
         physicsObjects.forEach(p => p.destroy());
         physicsObjects.length = 0;
         showCreate();
