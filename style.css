@@ -1181,3 +1181,39 @@ body {
 @media (max-width: 480px) {
     #gift-zone { bottom: 14vh; right: 8px; }
 }
+
+/* ========== MODAL DE REGALO ========== */
+#regalo-question {
+    color: var(--text-dark);
+    font-size: 1rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.regalo-answer-label {
+    color: var(--text-light);
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+#regalo-answer-text {
+    color: var(--pink-dark);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 4px 0 0;
+    text-align: center;
+}
+
+#regalo-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+#regalo-actions.hidden { display: none; }
+
+#regalo-actions .btn-answer {
+    padding: 12px 28px;
+    font-size: 1.1rem;
+    border-radius: 50px;
+}
