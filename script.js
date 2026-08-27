@@ -55,6 +55,16 @@
     const btnCartaDelete = document.getElementById('btn-carta-delete');
     const btnCartaClose = document.getElementById('btn-carta-close');
 
+    const regaloModal = document.getElementById('regalo-modal');
+    const regaloTitle = document.getElementById('regalo-title');
+    const regaloQuestion = document.getElementById('regalo-question');
+    const regaloAnswerBox = document.getElementById('regalo-answer-box');
+    const regaloAnswerText = document.getElementById('regalo-answer-text');
+    const regaloActions = document.getElementById('regalo-actions');
+    const btnRegaloSi = document.getElementById('btn-regalo-si');
+    const btnRegaloNo = document.getElementById('btn-regalo-no');
+    const btnRegaloClose = document.getElementById('btn-regalo-close');
+
     // ========== STATE ==========
     let state = {
         chickAwake: false,
@@ -183,7 +193,7 @@
 
     const GIFT_SRC = {
         carta: 'assets/nota.svg',
-        cajita: 'assets/regalo.svg'
+        cajita: 'assets/cofre.png'
     };
 
     const giftSpotTemplate = [
@@ -237,8 +247,52 @@
             state.viewGift = g;
             cartaModal.classList.remove('hidden');
         } else {
-            const q = g.content || 'Un regalo para ti 💝';
-            showMessage((isMineGift(g) ? 'Tu regalo: ' : '') + q, 3500);
+            openRegaloContent(g);
+        }
+    }
+
+    function openRegaloContent(g) {
+        const q = g.content || 'Un regalo para ti 💝';
+        const mine = isMineGift(g);
+        regaloTitle.textContent = mine ? 'Tu regalo' : `Regalo de ${g.author_name || 'alguien'}`;
+        regaloQuestion.textContent = q;
+
+        const answered = !!(g.answer);
+        if (answered) {
+            regaloAnswerBox.classList.remove('hidden');
+            regaloAnswerText.textContent = g.answer === 'si' ? '💕 Sí' : '😢 No';
+            regaloActions.classList.add('hidden');
+        } else {
+            regaloAnswerBox.classList.add('hidden');
+            if (mine) {
+                regaloActions.classList.add('hidden');
+            } else {
+                regaloActions.classList.remove('hidden');
+            }
+        }
+        state.viewGift = g;
+        regaloModal.classList.remove('hidden');
+    }
+
+    async function handleRegaloAnswer(answer) {
+        const g = state.viewGift;
+        if (!g || g.type !== 'cajita') return;
+        try {
+            const { data, error } = await supabaseClient.rpc('answer_gift', {
+                p_gift_id: g.id,
+                p_answer: answer
+            });
+            if (error) throw error;
+            const updated = data && data[0] ? data[0] : (data || {});
+            const idx = state.gifts.findIndex(x => x.id === g.id);
+            if (idx >= 0) {
+                state.gifts[idx] = Object.assign({}, state.gifts[idx], { answer, answered_by: state.gifts[idx].answered_by });
+            }
+            closeRegaloModal();
+            showMessage(answer === 'si' ? '¡Respuesta guardada! 💕' : 'Respuesta guardada 😢', 2000);
+        } catch (err) {
+            console.error(err);
+            showMessage('No se pudo guardar la respuesta 🙈', 3000);
         }
     }
 
@@ -271,6 +325,11 @@
 
     function closeCartaModal() {
         cartaModal.classList.add('hidden');
+        state.viewGift = null;
+    }
+
+    function closeRegaloModal() {
+        regaloModal.classList.add('hidden');
         state.viewGift = null;
     }
 
@@ -663,6 +722,10 @@
         giftTypeCarta.addEventListener('click', () => setGiftMode('carta'));
         giftTypeCajita.addEventListener('click', () => setGiftMode('cajita'));
         btnGiftSubmit.addEventListener('click', handleGiftSubmit);
+
+        btnRegaloClose.addEventListener('click', closeRegaloModal);
+        btnRegaloSi.addEventListener('click', () => handleRegaloAnswer('si'));
+        btnRegaloNo.addEventListener('click', () => handleRegaloAnswer('no'));
 
         chick.addEventListener('click', handleChickClick);
 
