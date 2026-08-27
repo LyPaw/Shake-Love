@@ -69,6 +69,7 @@
     let state = {
         chickAwake: false,
         boxOpen: false,
+        chestOpened: false,
         shakeCount: 0,
         touchCount: 0,
         neededShakes: 40,
@@ -375,6 +376,7 @@
             this.isDragging = false;
             this.hasBeenDragged = false;
             this.moved = false;
+            this.lastTouchEnd = 0;
             this.startX = 0;
             this.startY = 0;
             this.offsetX = 0;
@@ -390,7 +392,6 @@
             this.onDragStart = this.onDragStart.bind(this);
             this.onDragMove = this.onDragMove.bind(this);
             this.onDragEnd = this.onDragEnd.bind(this);
-            this.onClickBound = this.onClickBound.bind(this);
             this.animate = this.animate.bind(this);
 
             this.init();
@@ -401,27 +402,16 @@
             this.el.style.cursor = 'grab';
             this.el.addEventListener('mousedown', this.onDragStart);
             this.el.addEventListener('touchstart', this.onDragStart, { passive: false });
-            if (this.onTap) {
-                this.el.addEventListener('click', this.onClickBound);
-            }
             this.animate();
         }
 
         destroy() {
             this.el.removeEventListener('mousedown', this.onDragStart);
             this.el.removeEventListener('touchstart', this.onDragStart);
-            if (this.onTap) {
-                this.el.removeEventListener('click', this.onClickBound);
-            }
             document.removeEventListener('mousemove', this.onDragMove);
             document.removeEventListener('mouseup', this.onDragEnd);
             document.removeEventListener('touchmove', this.onDragMove);
             document.removeEventListener('touchend', this.onDragEnd);
-        }
-
-        onClickBound(e) {
-            if (this.moved) return;
-            if (this.onTap) this.onTap(e);
         }
 
         getClientPos(e) {
@@ -434,6 +424,9 @@
         onDragStart(e) {
             if (state.boxOpen) return;
             e.preventDefault();
+            if (e.type === 'mousedown' && Date.now() - this.lastTouchEnd < 500) {
+                return;
+            }
             const pos = this.getClientPos(e);
             const rect = this.el.getBoundingClientRect();
 
@@ -496,6 +489,14 @@
             document.removeEventListener('mouseup', this.onDragEnd);
             document.removeEventListener('touchmove', this.onDragMove);
             document.removeEventListener('touchend', this.onDragEnd);
+
+            if (e.type === 'touchend') {
+                this.lastTouchEnd = Date.now();
+            }
+
+            if (!this.moved && this.onTap) {
+                this.onTap(e);
+            }
 
             const speed = Math.sqrt(this.velX * this.velX + this.velY * this.velY);
             if (speed > 3) {
@@ -823,6 +824,7 @@
     function handleBack() {
         state.chickAwake = false;
         state.boxOpen = false;
+        state.chestOpened = false;
         state.shakeCount = 0;
         state.touchCount = 0;
         resetShakeProgress();
@@ -883,6 +885,7 @@
 
         function processShake() {
             const now = Date.now();
+            if (state.chestOpened) return;
             if (!state.shakeActive) {
                 state.shakeActive = true;
                 state.shakeStartTime = now;
@@ -920,7 +923,7 @@
         decayLoop();
 
         function handleMotion(e) {
-            if (state.boxOpen) return;
+            if (state.boxOpen || state.chestOpened) return;
 
             const acc = e.accelerationIncludingGravity;
             if (!acc) return;
@@ -1023,6 +1026,7 @@
 
     function openBox() {
         state.boxOpen = true;
+        state.chestOpened = true;
         box.classList.add('disappear');
 
         setTimeout(() => {
