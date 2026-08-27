@@ -37,6 +37,22 @@
     const loadingScreen = document.getElementById('loading-screen');
     const shakeFallback = document.getElementById('shake-fallback');
 
+    const giftZone = document.getElementById('gift-zone');
+    const btnAddGift = document.getElementById('btn-add-gift');
+    const giftList = document.getElementById('gift-list');
+    const giftModal = document.getElementById('gift-modal');
+    const giftModalTitle = document.getElementById('gift-modal-title');
+    const giftTypeCarta = document.getElementById('gift-type-carta');
+    const giftTypeCajita = document.getElementById('gift-type-cajita');
+    const giftContent = document.getElementById('gift-content');
+    const giftCajitaPreview = document.getElementById('gift-cajita-preview');
+    const btnGiftCancel = document.getElementById('btn-gift-cancel');
+    const btnGiftSubmit = document.getElementById('btn-gift-submit');
+    const cartaModal = document.getElementById('carta-modal');
+    const cartaTitle = document.getElementById('carta-title');
+    const cartaBody = document.getElementById('carta-body');
+    const btnCartaClose = document.getElementById('btn-carta-close');
+
     // ========== STATE ==========
     let state = {
         chickAwake: false,
@@ -46,7 +62,10 @@
         neededShakes: 40,
         neededTouches: 8,
         isPreview: false,
-        boxAlreadyOpenedToday: false,
+        roomCode: null,
+        myAuthorId: null,
+        gifts: [],
+        giftMode: 'carta',
         shakeStartTime: 0,
         shakeActive: false,
         lastShakeTime: 0,
@@ -91,21 +110,176 @@
         shakeText.textContent = '';
     }
 
-    // ========== DAILY BOX (localStorage) ==========
-    function getDailyKey() {
-        const params = new URLSearchParams(window.location.search);
-        const sender = sanitize(params.get('sender') || '', 30).replace(/[^a-zA-Z0-9_-]/g, '');
-        const message = sanitize(params.get('message') || '', 200).replace(/[^a-zA-Z0-9_-]/g, '');
-        const today = new Date().toISOString().split('T')[0];
-        return `box_${sender}_${message}_${today}`.substring(0, 200);
+    // ========== ROOM & GIFTS (Supabase RPC) ==========
+    function genRoomCode(length = 8) {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+        let code = '';
+        for (let i = 0; i < length; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return code;
     }
 
-    function wasBoxOpenedToday() {
-        return localStorage.getItem(getDailyKey()) === '1';
+    async function createNewRoom(sender, message, tzs) {
+        await ensureAnonSession();
+        let codigo = genRoomCode();
+        let created = false;
+        for (let attempt = 0; attempt < 5 && !created; attempt++) {
+            const { data, error } = await supabase.rpc('create_room', {
+                p_codigo: codigo,
+                p_sender: sender,
+                p_message: message,
+                p_tz: tzs.length > 0 ? tzs.join(',') : null
+            });
+            if (error) {
+                if (attempt < 4) { codigo = genRoomCode(); continue; }
+                throw error;
+            }
+            created = true;
+        }
+        const { data: user } = await supabase.auth.getUser();
+        state.myAuthorId = user?.user?.id || null;
+        return codigo;
     }
 
-    function markBoxOpenedToday() {
-        localStorage.setItem(getDailyKey(), '1');
+    async function openRoom(codigo) {
+        await ensureAnonSession();
+        const { data, error } = await supabase.rpc('get_room', { p_codigo: codigo });
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error('NO_ROOM');
+        const { data: user } = await supabase.auth.getUser();
+        state.myAuthorId = user?.user?.id || null;
+        state.roomCode = codigo;
+        return data[0];
+    }
+
+    async function loadGifts(roomCode) {
+        const { data, error } = await supabase.rpc('get_gifts', { p_room_code: roomCode });
+        if (error) throw error;
+        state.gifts = data || [];
+        return state.gifts;
+    }
+
+    async function saveGift(type, content) {
+        if (!state.roomCode) return;
+        const { data, error } = await supabase.rpc('create_gift', {
+            p_room_code: state.roomCode,
+            p_type: type,
+            p_content: content,
+            p_author_name: 'Anónimo'
+        });
+        if (error) throw error;
+        return data;
+    }
+
+    async function deleteGift(giftId) {
+        const { error } = await supabase.rpc('delete_gift', { p_gift_id: giftId });
+        if (error) throw error;
+    }
+
+    function renderGifts() {
+        giftList.innerHTML = '';
+        if (state.isPreview) return;
+        state.gifts.forEach(g => {
+            const card = document.createElement('div');
+            card.className = 'gift-item';
+            const mine = g.author_id && state.myAuthorId && g.author_id === state.myAuthorId;
+            card.classList.add(mine ? 'gift-mine' : 'gift-other');
+
+            if (g.type === 'carta') {
+                if (mine) {
+                    card.classList.add('gift-carta');
+                    const text = document.createElement('span');
+                    text.className = 'gift-carta-text';
+                    text.textContent = g.content || '';
+                    card.appendChild(text);
+                    const del = document.createElement('button');
+                    del.className = 'gift-delete';
+                    del.textContent = '✕';
+                    del.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        await deleteGift(g.id);
+                        state.gifts = state.gifts.filter(x => x.id !== g.id);
+                        renderGifts();
+                    });
+                    card.appendChild(del);
+                } else {
+                    card.classList.add('gift-carta');
+                    card.title = 'Leer carta';
+                    const envelope = document.createElement('span');
+                    envelope.className = 'gift-carta-icon';
+                    envelope.textContent = '💌';
+                    card.appendChild(envelope);
+                    card.addEventListener('click', () => openCarta(g));
+                }
+            } else {
+                card.classList.add('gift-cajita');
+                const img = document.createElement('img');
+                img.src = 'assets/cofre.png';
+                img.alt = 'Regalo';
+                if (mine) img.classList.add('gift-cajita-mine');
+                card.appendChild(img);
+                card.title = g.content || 'Un regalo';
+                card.addEventListener('click', () => {
+                    if (g.content) showMessage(g.content, 2500);
+                });
+            }
+            giftList.appendChild(card);
+        });
+    }
+
+    function openCarta(g) {
+        cartaTitle.textContent = `Carta de ${g.author_name || 'alguien'}`;
+        cartaBody.textContent = g.content || '...';
+        cartaModal.classList.remove('hidden');
+    }
+
+    function openGiftModal() {
+        giftContent.value = '';
+        giftContent.classList.remove('hidden');
+        giftCajitaPreview.classList.add('hidden');
+        setGiftMode('carta');
+        giftModal.classList.remove('hidden');
+    }
+
+    function setGiftMode(mode) {
+        state.giftMode = mode;
+        giftTypeCarta.classList.toggle('active', mode === 'carta');
+        giftTypeCajita.classList.toggle('active', mode === 'cajita');
+        giftContent.classList.toggle('hidden', mode === 'cajita');
+        giftCajitaPreview.classList.toggle('hidden', mode !== 'cajita');
+        if (mode === 'cajita') {
+            giftModalTitle.textContent = 'Elige un regalo';
+            giftContent.placeholder = '';
+        } else {
+            giftModalTitle.textContent = 'Deja tu regalo';
+            giftContent.placeholder = 'Escribe tu carta aquí...';
+        }
+    }
+
+    function closeGiftModal() {
+        giftModal.classList.add('hidden');
+    }
+
+    function closeCartaModal() {
+        cartaModal.classList.add('hidden');
+    }
+
+    async function handleGiftSubmit() {
+        if (!state.roomCode) return;
+        const content = sanitize(giftContent.value.trim(), 500);
+        if (state.giftMode === 'carta' && !content) return;
+
+        try {
+            const gift = await saveGift(state.giftMode, content || (state.giftMode === 'cajita' ? 'Un regalo para ti 💝' : ''));
+            state.gifts.push(gift);
+            renderGifts();
+            closeGiftModal();
+            showMessage('¡Regalo enviado! 💝', 2000);
+        } catch (err) {
+            console.error(err);
+            showMessage('No se pudo enviar 🙈', 3000);
+        }
     }
 
     // ========== DRAG & DROP PHYSICS (ICE RINK) ==========
@@ -254,27 +428,28 @@
                     const oTop = y + sceneRect.top;
                     const oRight = oLeft + rect.width;
                     const oBottom = oTop + rect.height;
+                    const push = 1.5;
 
-                    if (oRight > chickRect.left && oLeft < chickRect.right &&
-                        oBottom > chickRect.top && oTop < chickRect.bottom) {
+                    if (oRight - push > chickRect.left && oLeft + push < chickRect.right &&
+                        oBottom - push > chickRect.top && oTop + push < chickRect.bottom) {
                         const overlapX = Math.min(oRight - chickRect.left, chickRect.right - oLeft);
                         const overlapY = Math.min(oBottom - chickRect.top, chickRect.bottom - oTop);
 
                         if (overlapX < overlapY) {
                             if (oLeft + rect.width / 2 < chickRect.left + chickRect.width / 2) {
-                                x = chickRect.left - sceneRect.left - rect.width;
+                                x -= push;
                             } else {
-                                x = chickRect.right - sceneRect.left;
+                                x += push;
                             }
-                            this.velX = -this.velX * this.bounce;
                         } else {
                             if (oTop + rect.height / 2 < chickRect.top + chickRect.height / 2) {
-                                y = chickRect.top - sceneRect.top - rect.height;
+                                y -= push;
                             } else {
-                                y = chickRect.bottom - sceneRect.top;
+                                y += push;
                             }
-                            this.velY = -this.velY * this.bounce;
                         }
+                        this.velX *= this.friction;
+                        this.velY *= this.friction;
                     }
 
                     this.el.style.left = x + 'px';
@@ -330,38 +505,66 @@
     }
 
     // ========== INIT ==========
-    function init() {
+    async function init() {
         const params = new URLSearchParams(window.location.search);
-        const message = sanitize(decodeURIComponent(params.get('message') || ''), 200);
-        const sender = sanitize(params.get('sender') || '', 30);
-        const tzs = params.get('tz');
+        const codigo = sanitize(params.get('r') || '', 40);
         state.isPreview = params.get('preview') === 'true';
 
-        if (message && sender) {
-            createScreen.classList.remove('active');
-            btnBack.style.display = state.isPreview ? '' : 'none';
+        if (codigo && !state.isPreview) {
+            try {
+                const room = await openRoom(codigo);
+                const sender = room.sender;
+                const message = room.message;
+                const tzs = room.tz;
+                state.roomCode = codigo;
 
-            setTimeout(() => {
-                loadingScreen.classList.add('hidden');
-                setTimeout(() => { loadingScreen.style.display = 'none'; }, 600);
+                createScreen.classList.remove('active');
+                btnBack.style.display = 'none';
 
-                showProposal(sender, message);
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => { loadingScreen.style.display = 'none'; }, 600);
 
-                if (tzs) {
-                    startClocks(tzs.split(','));
-                }
+                    showProposal(sender, message);
 
-                if (!state.isPreview && wasBoxOpenedToday()) {
-                    state.boxAlreadyOpenedToday = true;
-                    state.chickAwake = false;
-                    chickImg.src = 'assets/chick_sleep.PNG';
-                    box.classList.add('disappear');
-                    messageArea.classList.add('hidden');
-                }
-            }, 1000);
+                    if (tzs) {
+                        startClocks(tzs.split(','));
+                    }
+
+                    loadGifts(codigo)
+                        .then(renderGifts)
+                        .catch(err => console.error('loadGifts', err));
+                }, 1000);
+            } catch (err) {
+                console.error(err);
+                loadingScreen.style.display = 'none';
+                showMessage('Ese enlace no es válido 🙈', 3000);
+                showCreate();
+            }
         } else {
-            loadingScreen.style.display = 'none';
-            showCreate();
+            const message = sanitize(decodeURIComponent(params.get('message') || ''), 200);
+            const sender = sanitize(params.get('sender') || '', 30);
+            const tzs = params.get('tz');
+
+            if (state.isPreview && message && sender) {
+                createScreen.classList.remove('active');
+                btnBack.style.display = '';
+
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => { loadingScreen.style.display = 'none'; }, 600);
+
+                    showProposal(sender, message);
+                    giftZone.classList.add('hidden');
+
+                    if (tzs) {
+                        startClocks(tzs.split(','));
+                    }
+                }, 1000);
+            } else {
+                loadingScreen.style.display = 'none';
+                showCreate();
+            }
         }
 
         setupListeners();
@@ -371,6 +574,7 @@
     function showCreate() {
         createScreen.classList.add('active');
         proposalScreen.classList.remove('active');
+        giftZone.classList.add('hidden');
     }
 
     function showProposal(sender, message) {
@@ -378,6 +582,8 @@
         proposalScreen.classList.add('active');
         senderName.textContent = `— ${sender} —`;
         proposalMessage.textContent = message;
+
+        giftZone.classList.remove('hidden');
 
         physicsObjects.forEach(p => p.destroy());
         physicsObjects.length = 0;
@@ -400,6 +606,13 @@
         btnYes.addEventListener('click', handleYes);
         btnNo.addEventListener('click', handleNo);
         btnBack.addEventListener('click', handleBack);
+
+        btnAddGift.addEventListener('click', openGiftModal);
+        btnGiftCancel.addEventListener('click', closeGiftModal);
+        btnCartaClose.addEventListener('click', closeCartaModal);
+        giftTypeCarta.addEventListener('click', () => setGiftMode('carta'));
+        giftTypeCajita.addEventListener('click', () => setGiftMode('cajita'));
+        btnGiftSubmit.addEventListener('click', handleGiftSubmit);
 
         chick.addEventListener('click', handleChickClick);
 
@@ -447,26 +660,35 @@
         });
     }
 
-    function handleFormSubmit(e) {
+    async function handleFormSubmit(e) {
         e.preventDefault();
         const sender = sanitize(senderInput.value.trim(), 30);
         const message = sanitize(messageInput.value.trim(), 200);
         if (!sender || !message) return;
 
-        const url = new URL(window.location.href.split('?')[0]);
-        url.searchParams.set('sender', sender);
-        url.searchParams.set('message', message);
+        const submitBtn = createForm.querySelector('.btn-create');
+        submitBtn.disabled = true;
 
         const selectedTzs = [...timezoneSelect.selectedOptions].map(opt => opt.value);
-        if (selectedTzs.length > 0) {
-            url.searchParams.set('tz', selectedTzs.join(','));
+
+        try {
+            const codigo = await createNewRoom(sender, message, selectedTzs);
+            state.roomCode = codigo;
+
+            const url = new URL(window.location.href.split('?')[0]);
+            url.searchParams.set('r', codigo);
+
+            generatedLink.value = url.toString();
+            linkResult.classList.remove('hidden');
+
+            const encodedMessage = encodeURIComponent(`¡Tengo una pregunta para ti! 💌\n\n${message}`);
+            whatsappBtn.href = `https://wa.me/?text=${encodedMessage}%0A%0A${encodeURIComponent(url.toString())}`;
+        } catch (err) {
+            console.error(err);
+            showMessage('No se pudo crear el enlace 🙈', 3000);
+        } finally {
+            submitBtn.disabled = false;
         }
-
-        generatedLink.value = url.toString();
-        linkResult.classList.remove('hidden');
-
-        const encodedMessage = encodeURIComponent(`¡Tengo una pregunta para ti! 💌\n\n${message}`);
-        whatsappBtn.href = `https://wa.me/?text=${encodedMessage}%0A%0A${encodeURIComponent(url.toString())}`;
     }
 
     function handleCopy() {
@@ -482,6 +704,7 @@
         state.isPreview = true;
         btnBack.style.display = '';
         showProposal(sender, message);
+        giftZone.classList.add('hidden');
     }
 
     function handleBack() {
@@ -506,7 +729,7 @@
 
     // ========== CHICK INTERACTION ==========
     function handleChickClick() {
-        if (state.chickAwake || state.boxAlreadyOpenedToday) return;
+        if (state.chickAwake) return;
 
         state.touchCount++;
 
@@ -522,7 +745,7 @@
     }
 
     function handleTouchStart(e) {
-        if (state.boxOpen || state.chickAwake || state.boxAlreadyOpenedToday) return;
+        if (state.boxOpen || state.chickAwake) return;
         if (e.target.closest('.interactive-object') || e.target.closest('#chick')) return;
 
         state.touchCount++;
@@ -560,7 +783,7 @@
 
         function decayLoop() {
             setInterval(() => {
-                if (!state.shakeActive || state.boxOpen || state.boxAlreadyOpenedToday || state.chickAwake) return;
+                if (!state.shakeActive || state.boxOpen || state.chickAwake) return;
 
                 const now = Date.now();
                 const timeSinceLastShake = now - state.lastShakeTime;
@@ -581,7 +804,7 @@
         decayLoop();
 
         function handleMotion(e) {
-            if (state.boxOpen || state.boxAlreadyOpenedToday) return;
+            if (state.boxOpen) return;
 
             const acc = e.accelerationIncludingGravity;
             if (!acc) return;
@@ -627,7 +850,7 @@
         }
 
         setTimeout(() => {
-            if (!motionDetected && !state.boxAlreadyOpenedToday) {
+            if (!motionDetected) {
                 shakeFallback.classList.remove('hidden');
                 let fallbackStartY = 0;
                 let fallbackActive = false;
@@ -659,7 +882,7 @@
         }, 2000);
 
         document.addEventListener('keydown', (e) => {
-            if (state.boxOpen || state.boxAlreadyOpenedToday) return;
+            if (state.boxOpen) return;
             const tag = e.target.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
@@ -684,9 +907,7 @@
 
     function openBox() {
         state.boxOpen = true;
-        state.boxAlreadyOpenedToday = true;
         box.classList.add('disappear');
-        markBoxOpenedToday();
 
         setTimeout(() => {
             messageArea.classList.remove('hidden');
