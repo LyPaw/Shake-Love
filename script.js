@@ -1036,42 +1036,6 @@
         }, 300);
     }
 
-    function closeBox(keepHidden = false) {
-        state.boxOpen = false;
-        messageArea.classList.add('hidden');
-        messageArea.classList.remove('risen');
-        resetShakeProgress();
-
-        if (keepHidden) {
-            box.classList.add('disappear');
-            box.classList.remove('open');
-            setTimeout(() => {
-                state.chickAwake = false;
-                chick.classList.remove('awake');
-                chickImg.src = 'assets/chick_sleep.PNG';
-                state.shakeCount = 0;
-                state.touchCount = 0;
-            }, 600);
-        } else {
-            box.style.display = '';
-            box.classList.remove('open', 'disappear');
-            box.classList.add('closing');
-            boxImg.src = 'assets/cofre.png';
-
-            setTimeout(() => {
-                box.classList.remove('closing');
-            }, 600);
-
-            setTimeout(() => {
-                state.chickAwake = false;
-                chick.classList.remove('awake');
-                chickImg.src = 'assets/chick_sleep.PNG';
-                state.shakeCount = 0;
-                state.touchCount = 0;
-            }, 1200);
-        }
-    }
-
     // ========== YES / NO ==========
     function handleYes() {
         playYesSound();
@@ -1095,11 +1059,13 @@
 
         btnYes.style.display = 'none';
         btnNo.style.display = 'none';
+
+        setTimeout(() => returnToNormal(true), 3500);
     }
 
     function handleNo() {
         playNoSound();
-        closeBox(true);
+        returnToNormal(false);
 
         const noTexts = [
             '¡El pollito se pone triste... 😢',
@@ -1108,6 +1074,27 @@
             '¡Intenta de nuevo! El pollito no se rinde 💪'
         ];
         showMessage(noTexts[Math.floor(Math.random() * noTexts.length)], 2500);
+    }
+
+    // ========== RETURN TO NORMAL ==========
+    function returnToNormal(babyAwake) {
+        proposalScreen.classList.remove('awakening');
+        messageArea.classList.remove('risen');
+
+        if (babyAwake) {
+            state.chickAwake = true;
+            chick.classList.add('awake');
+            chickImg.src = 'assets/chick.PNG';
+        } else {
+            state.chickAwake = false;
+            chick.classList.remove('awake');
+            chickImg.src = 'assets/chick_sleep.PNG';
+        }
+
+        state.shakeCount = 0;
+        state.touchCount = 0;
+        state.boxOpen = false;
+        resetShakeProgress();
     }
 
     // ========== LILIES ==========
