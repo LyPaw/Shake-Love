@@ -969,7 +969,8 @@
         }
 
         setTimeout(() => {
-            if (!motionDetected) {
+            const isTouch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+            if (!motionDetected && isTouch) {
                 shakeFallback.classList.remove('hidden');
                 let fallbackStartY = 0;
                 let fallbackActive = false;
