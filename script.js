@@ -70,6 +70,7 @@
         chickAwake: false,
         boxOpen: false,
         chestOpened: false,
+        mainAnsweredYes: false,
         shakeCount: 0,
         touchCount: 0,
         neededShakes: 40,
@@ -825,6 +826,7 @@
         state.chickAwake = false;
         state.boxOpen = false;
         state.chestOpened = false;
+        state.mainAnsweredYes = false;
         state.shakeCount = 0;
         state.touchCount = 0;
         resetShakeProgress();
@@ -847,12 +849,27 @@
 
     // ========== CHICK INTERACTION ==========
     function handleChickClick() {
+        chickImg.style.transform = 'scale(0.95)';
+        setTimeout(() => { chickImg.style.transform = ''; }, 150);
+
+        if (state.mainAnsweredYes) {
+            if (state.chickAwake) {
+                state.chickAwake = false;
+                chick.classList.remove('awake');
+                chickImg.src = 'assets/chick_sleep.PNG';
+                showTouchFeedback('💤');
+            } else {
+                state.chickAwake = true;
+                chick.classList.add('awake');
+                chickImg.src = 'assets/chick.PNG';
+                showTouchFeedback('😍');
+            }
+            return;
+        }
+
         if (state.chickAwake) return;
 
         state.touchCount++;
-
-        chickImg.style.transform = 'scale(0.95)';
-        setTimeout(() => { chickImg.style.transform = ''; }, 150);
 
         showTouchFeedback(state.touchFeedbacks[Math.floor(Math.random() * state.touchFeedbacks.length)]);
 
@@ -1056,6 +1073,8 @@
         `;
         yesText.textContent = '💕 ¡Sabía que dirías que sí! 💕';
         messageArea.appendChild(yesText);
+        state.celebrationText = yesText;
+        state.mainAnsweredYes = true;
 
         btnYes.style.display = 'none';
         btnNo.style.display = 'none';
@@ -1065,6 +1084,7 @@
 
     function handleNo() {
         playNoSound();
+        state.mainAnsweredYes = false;
         returnToNormal(false);
 
         const noTexts = [
@@ -1079,7 +1099,12 @@
     // ========== RETURN TO NORMAL ==========
     function returnToNormal(babyAwake) {
         proposalScreen.classList.remove('awakening');
+        messageArea.classList.add('hidden');
         messageArea.classList.remove('risen');
+        if (state.celebrationText) {
+            state.celebrationText.remove();
+            state.celebrationText = null;
+        }
 
         if (babyAwake) {
             state.chickAwake = true;
