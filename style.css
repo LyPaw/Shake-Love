@@ -787,6 +787,11 @@ body {
         height: 180px;
     }
 
+    .scene-gift img {
+        width: 180px;
+        height: 180px;
+    }
+
     .interactive-object img {
         width: 108px;
         height: 108px;
@@ -854,6 +859,11 @@ body {
     }
 
     #box-img {
+        width: 252px;
+        height: 252px;
+    }
+
+    .scene-gift img {
         width: 252px;
         height: 252px;
     }
@@ -1036,8 +1046,8 @@ body {
 }
 
 .scene-gift img {
-    width: 100px;
-    height: 100px;
+    width: 216px;
+    height: 216px;
     object-fit: contain;
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
     pointer-events: none;
